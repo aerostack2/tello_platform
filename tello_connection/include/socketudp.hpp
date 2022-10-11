@@ -7,21 +7,21 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <cstring>
 #include <sstream>
+#include <string>
 #include <vector>
-using namespace std;
 
 class SocketUdp {
 private:
   int socket_fd;
-  char* IP;
+  std::string IP;
   int port;
   sockaddr_in serv_addr;
-  vector<unsigned char> buffer;
+  std::vector<unsigned char> buffer;
   sockaddr_storage dest_addr;
 
 private:
@@ -29,20 +29,20 @@ private:
   bool setDest_addr();
 
 public:
-  SocketUdp(char* IP = "0.0.0.0", int port = 0, uint bufferSize = 1024);
-  ~SocketUdp();  // closisng socket
+  SocketUdp(const std::string& IP = "0.0.0.0", int port = 0, uint bufferSize = 1024);
+  ~SocketUdp();  // closing socket
 
   bool bindServer();
-  int getSocketfd();
-  char* getIP();
-  int getPort();
+  int getSocketfd() const;
+  const char* getIP() const;
+  int getPort() const;
 
-  void setSocketfd(int socket_fd);
-  void setIP(char* IP);
-  void setPort(int port);
+  inline void setSocketfd(int socket_fd) { this->socket_fd = socket_fd; }
+  inline void setIP(const char* IP) { this->IP = IP; }
+  inline void setPort(int port) { this->port = port; }
 
-  bool sending(string message);
-  string receiving(const int flags = MSG_DONTWAIT);
+  bool sending(std::string message);
+  std::string receiving(const int flags = MSG_DONTWAIT);
 };
 
 #endif  // SOCKETUDP_H

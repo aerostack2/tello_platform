@@ -2,24 +2,20 @@
 #define TELLO_H
 
 #include <netinet/in.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <boost/algorithm/string.hpp>
 #include <cmath>
 #include <iostream>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
 #include "socketudp.hpp"
-#include "string.h"
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgcodecs.hpp"
-
-using namespace std;
-using namespace cv;
 
 const int port_command = 8889;
 const int port_state   = 8890;
@@ -35,7 +31,7 @@ private:
   SocketUdp* commandSender;
   SocketUdp* stateRecv;
   // State information.
-  vector<double> state;
+  std::vector<double> state;
   coordinates orientation;
   coordinates velocity;
   coordinates acceleration;
@@ -46,11 +42,11 @@ private:
   double height;
   double barometer;
 
-  Mat frame;
+  cv::Mat frame;
   bool connected;
 
 private:
-  bool filterState(string data);
+  bool filterState(std::string data);
   void update();
   void threadStateFnc();
 
@@ -58,10 +54,10 @@ public:
   Tello();   // creating sockets
   ~Tello();  // closing sockets
 
-  std::pair<bool, vector<double>> getState();
-  std::pair<bool, std::string> sendCommand(string command);
+  std::pair<bool, std::vector<double>> getState();
+  std::pair<bool, std::string> sendCommand(std::string command);
 
-  vector<coordinates> getIMU();
+  std::vector<coordinates> getIMU();
   coordinates getOrientation();
   coordinates getVelocity();
   coordinates getAcceleration();
@@ -70,7 +66,7 @@ public:
   double getHeight();
   void streamVideo();
   double getBattery();
-  Mat getFrame();
+  cv::Mat getFrame();
 
   bool x_motion(double x);                                     // Forward or backward move.
   bool y_motion(double y);                                     // right or left move.

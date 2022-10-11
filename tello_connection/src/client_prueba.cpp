@@ -13,7 +13,6 @@
 #define PORT 8889
 #define MAXLINE 1024
 
-using namespace std;
 // Driver code
 int main() {
   int sockfd;
@@ -40,16 +39,16 @@ int main() {
 
   sendto(sockfd, (const char *)hello, strlen(hello), MSG_CONFIRM,
          reinterpret_cast<sockaddr *>(&servaddr), sizeof(servaddr));
-  cout << "Hello message sent." << endl;
+  std::cout << "Hello message sent." << std::endl;
   socklen_t *addrlen;
   n         = recvfrom(sockfd, buffer2.data(), MAXLINE, MSG_WAITALL,
                reinterpret_cast<sockaddr *>(&servaddr), addrlen);
   buffer[n] = '\0';
-  cout << "Server : ";
+  std::cout << "Server : ";
   for (int i = 0; i < buffer2.size(); i++) {
-    cout << buffer2[i];
+    std::cout << buffer2[i];
   }
-  cout << endl;
+  std::cout << std::endl;
   close(sockfd);
   return 0;
 }

@@ -14,14 +14,13 @@
    tsks.
 */
 
-// using namespace cv;
 int main(int argc, char **argv) {
   Tello *tello;
   tello = new Tello;
 
   tello->sendCommand("takeoff");
   sleep(2);
-  cout << tello->speedMotion(0, 0, 0, 30) << endl;
+  std::cout << tello->speedMotion(0, 0, 0, 30) << std::endl;
   sleep(2);
   tello->sendCommand("land");
   sleep(5);

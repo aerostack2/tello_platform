@@ -4,7 +4,6 @@
 #include <iostream>
 
 Tello::Tello() {
-  // cout<<"Creating sockets ..."<<endl;
   commandSender = new SocketUdp;
   stateRecv     = new SocketUdp;
 
@@ -15,18 +14,18 @@ Tello::Tello() {
 
   commandSender->bindServer();
 
-  pair<bool, string> response = sendCommand("command");
+  std::pair<bool, std::string> response = sendCommand("command");
   if (response.first == false or response.second == "Error") {
-    cout << "Error: Connecting to tello" << endl;
+    std::cout << "Error: Connecting to tello" << std::endl;
     exit(-1);
   }
   stateRecv->bindServer();
   state.resize(16);
   update();
 
-  thread stateThd(&Tello::threadStateFnc, this);
+  std::thread stateThd(&Tello::threadStateFnc, this);
   stateThd.detach();
-  thread videoThd(&Tello::streamVideo, this);
+  std::thread videoThd(&Tello::streamVideo, this);
   videoThd.detach();
 }
 
@@ -37,13 +36,14 @@ Tello::~Tello() {
   delete (commandSender);
   delete (stateRecv);
 }
-std::pair<bool, std::string> Tello::sendCommand(string command) {
-  std::pair<bool, string> ret;
-  bool success        = false;
-  uint cont           = 0;
-  const int timeLimit = 10;
-  string msgsBack     = "";
-  cout << command << endl;
+
+std::pair<bool, std::string> Tello::sendCommand(std::string command) {
+  std::pair<bool, std::string> ret;
+  bool success         = false;
+  uint cont            = 0;
+  const int timeLimit  = 10;
+  std::string msgsBack = "";
+  std::cout << command << std::endl;
   do {
     commandSender->sending(command);
     sleep(1);
@@ -53,7 +53,7 @@ std::pair<bool, std::string> Tello::sendCommand(string command) {
   } while ((msgsBack.length() == 0) and (cont <= timeLimit));
 
   if (cont > timeLimit) {
-    cout << "The command '" << command << "' is not received." << endl;
+    std::cout << "The command '" << command << "' is not received." << std::endl;
   } else {
     success = true;
   }
@@ -63,17 +63,18 @@ std::pair<bool, std::string> Tello::sendCommand(string command) {
 }
 
 void Tello::threadStateFnc() {
-  pair<bool, vector<double>> resp;
+  std::pair<bool, std::vector<double>> resp;
 
   for (;;) {
     resp = getState();
     sleep(0.2);
   }
 }
-std::pair<bool, vector<double>> Tello::getState() {
-  const int timeLimit = 10;
-  string msgs         = "";
-  pair<bool, vector<double>> ret;
+
+std::pair<bool, std::vector<double>> Tello::getState() {
+  // const int timeLimit = 10;
+  std::string msgs = "";
+  std::pair<bool, std::vector<double>> ret;
   ret.first = true;
 
   msgs = stateRecv->receiving();
@@ -87,18 +88,19 @@ std::pair<bool, vector<double>> Tello::getState() {
   return ret;
 }
 
-bool Tello::filterState(string data) {
+// TODO replace boost with std
+bool Tello::filterState(std::string data) {
   bool success = true;
-  vector<string> values, values_;
+  std::vector<std::string> values, values_;
   boost::split(values, data, boost::is_any_of(";"));
-  for (int value_idx = 0; value_idx < values.size(); value_idx++) {
+  for (int value_idx = 0; value_idx < static_cast<int>(values.size()); value_idx++) {
     if (values[value_idx].length() != 0) {
       boost::split(values_, values[value_idx], boost::is_any_of(":"));
       // cout<<values[value_idx]<<endl;
-      if (value_idx <= state.size()) {
+      if (value_idx <= static_cast<int>(state.size())) {
         state[value_idx] = stod(values_[1]);
       } else {
-        cout << "Error: Adding data to the 'state' attribute" << endl;
+        std::cout << "Error: Adding data to the 'state' attribute" << std::endl;
         success = false;
       }
     }
@@ -106,6 +108,7 @@ bool Tello::filterState(string data) {
   if (success) update();
   return success;
 }
+
 void Tello::update() {
   orientation.x = state[0];
   orientation.y = state[1];
@@ -125,53 +128,59 @@ void Tello::update() {
   acceleration.y = state[14];
   acceleration.z = state[15];
 }
+
 coordinates Tello::getOrientation() { return orientation; }
 
 coordinates Tello::getVelocity() { return velocity; }
 
 coordinates Tello::getAcceleration() { return acceleration; }
+
 double Tello::getBarometer() { return barometer; }
-vector<coordinates> Tello::getIMU() {
-  vector<coordinates> imu;
+
+std::vector<coordinates> Tello::getIMU() {
+  std::vector<coordinates> imu;
   imu.push_back(orientation);
   imu.push_back(velocity);
   imu.push_back(acceleration);
   return imu;
 }
+
 double Tello::getHeight() { return height; }
+
 double Tello::getBattery() { return battery; }
 
 bool Tello::isConnected() { return connected; }
 
 void Tello::streamVideo() {
-  pair<bool, string> response = sendCommand("streamon");
+  std::pair<bool, std::string> response = sendCommand("streamon");
 
   if (response.first) {
-    VideoCapture capture{URL_stream, CAP_FFMPEG};
+    cv::VideoCapture capture{URL_stream, cv::CAP_FFMPEG};
     while (true) {
       capture >> frame;
 
       if (!frame.empty()) {
         imshow("Tello Stream", frame);
       }
-      if (waitKey(1) == 27) {
+      if (cv::waitKey(1) == 27) {
         break;
       }
     }
   }
 }
+
 // Forward or backward move.
 bool Tello::x_motion(double x) {
   std::pair<bool, std::string> response;
-  string msg;
+  std::string msg;
   response.first  = false;
   response.second = "";
   bool ret        = false;
   if (x > 0) {
-    msg      = "forward " + to_string(abs(x));
+    msg      = "forward " + std::to_string(abs(x));
     response = sendCommand(msg);
   } else if (x < 0) {
-    msg      = "back " + to_string(abs(x));
+    msg      = "back " + std::to_string(abs(x));
     response = sendCommand(msg);
   } else {
     response.first = true;
@@ -185,15 +194,15 @@ bool Tello::x_motion(double x) {
 // right or left move.
 bool Tello::y_motion(double y) {
   std::pair<bool, std::string> response;
-  string msg;
+  std::string msg;
   response.first  = false;
   response.second = "";
   bool ret        = false;
   if (y > 0) {
-    msg      = "right " + to_string(abs(y));
+    msg      = "right " + std::to_string(abs(y));
     response = sendCommand(msg);
   } else if (y < 0) {
-    msg      = "left " + to_string(abs(y));
+    msg      = "left " + std::to_string(abs(y));
     response = sendCommand(msg);
   } else {
     response.first = true;
@@ -207,15 +216,15 @@ bool Tello::y_motion(double y) {
 // up or left down.
 bool Tello::z_motion(double z) {
   std::pair<bool, std::string> response;
-  string msg;
+  std::string msg;
   response.first  = false;
   response.second = "";
   bool ret        = false;
   if (z > 0) {
-    msg      = "up " + to_string(int(abs(z)));
+    msg      = "up " + std::to_string(int(abs(z)));
     response = sendCommand(msg);
   } else if (z < 0) {
-    msg      = "down " + to_string(int(abs(z)));
+    msg      = "down " + std::to_string(int(abs(z)));
     response = sendCommand(msg);
   } else {
     response.first = true;
@@ -229,15 +238,15 @@ bool Tello::z_motion(double z) {
 // clockwise or counterclockwise
 bool Tello::yaw_twist(double yaw) {
   std::pair<bool, std::string> response;
-  string msg;
+  std::string msg;
   response.first  = false;
   response.second = "";
   bool ret        = false;
   if (yaw > 0) {
-    msg      = "cw " + to_string(abs(yaw));
+    msg      = "cw " + std::to_string(abs(yaw));
     response = sendCommand(msg);
   } else if (yaw < 0) {
-    msg      = "ccw " + to_string(abs(yaw));
+    msg      = "ccw " + std::to_string(abs(yaw));
     response = sendCommand(msg);
   } else {
     response.first = true;
@@ -251,12 +260,12 @@ bool Tello::yaw_twist(double yaw) {
 bool Tello::speedMotion(double x, double y, double z, double yaw) {
   bool ret = false;
   std::pair<bool, std::string> response;
-  string msg;
+  std::string msg;
   response.first  = false;
   response.second = "";
 
-  msg = "rc " + to_string(int(x)) + " " + to_string(int(y)) + " " + to_string(int(z)) + " " +
-        to_string(int(yaw));
+  msg = "rc " + std::to_string(int(x)) + " " + std::to_string(int(y)) + " " +
+        std::to_string(int(z)) + " " + std::to_string(int(yaw));
   response = sendCommand(msg);
 
   if (response.first and response.second != "Error") {

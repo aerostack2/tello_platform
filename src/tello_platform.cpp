@@ -89,7 +89,7 @@ bool TelloPlatform::ownSendCommand() {
       z_m     = this->command_pose_msg_.pose.position.z;     // m
       yaw_rad = this->command_pose_msg_.pose.orientation.z;  // rad
 
-      vector<double> new_ref = {x_m, y_m, z_m, yaw_rad};
+      std::vector<double> new_ref = {x_m, y_m, z_m, yaw_rad};
       if (reference_point_ != new_ref) {
         double x   = std::clamp(x_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
         double y   = std::clamp(y_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
@@ -124,7 +124,7 @@ bool TelloPlatform::ownSendCommand() {
       double vz_   = this->command_twist_msg_.twist.linear.z;   // m/s
       double vyaw_ = this->command_twist_msg_.twist.angular.z;  // rad/s
 
-      vector<double> new_ref = {vx_, vy_, vz_, vyaw_};
+      std::vector<double> new_ref = {vx_, vy_, vz_, vyaw_};
       if (reference_speed_ != new_ref) {
         double vx   = std::clamp(vx_, min_speed_, max_speed_);
         vx          = normalize(vx, min_speed_, max_speed_);  // %
