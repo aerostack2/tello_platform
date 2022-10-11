@@ -1,7 +1,6 @@
 #include "tello_platform.hpp"
 
-int main(int argc, char * argv[])
-{  
+int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
 
   auto telloNode = std::make_shared<TelloPlatform>();
@@ -14,8 +13,7 @@ int main(int argc, char * argv[])
   executor.add_node(node1);
   executor.spin();*/
 
-  //as2::spinLoop(node);
- 
+  // as2::spinLoop(node);
 
   rclcpp::shutdown();
   return 0;

@@ -3,48 +3,49 @@
 /*#include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgcodecs.hpp"*/
-/* Functions: 
-    [Option 1] Creating a Tello class that in the constructor creates the both sockets and makes de command message with the drone. 
-    It'd be fine to check how to handle error messages. Since, that 'd finish the program and destructor 'd be called. 
-    IMPORTANT: Close sockets and free ports. 
+/* Functions:
+    [Option 1] Creating a Tello class that in the constructor creates the both sockets and makes de
+   command message with the drone. It'd be fine to check how to handle error messages. Since, that
+   'd finish the program and destructor 'd be called. IMPORTANT: Close sockets and free ports.
 
-    - connection () en plan abrir la comunicacion con el tello. Simplemente enviar "commmand" y esperar a que haya respuesta.
-    - getState () filter and divide the state in different variables for make easy the following tsks. 
+    - connection () en plan abrir la comunicacion con el tello. Simplemente enviar "commmand" y
+   esperar a que haya respuesta.
+    - getState () filter and divide the state in different variables for make easy the following
+   tsks.
 */
 
-//using namespace cv;
-int main (int argc, char **argv){
-    Tello *tello; 
-    tello = new Tello;
+// using namespace cv;
+int main(int argc, char **argv) {
+  Tello *tello;
+  tello = new Tello;
 
-    
-    tello->sendCommand("takeoff");
-    sleep(2);
-    cout<<tello->speedMotion(0, 0, 0, 30)<<endl;
-    sleep(2);
-    tello->sendCommand("land");
-    sleep(5);
+  tello->sendCommand("takeoff");
+  sleep(2);
+  cout << tello->speedMotion(0, 0, 0, 30) << endl;
+  sleep(2);
+  tello->sendCommand("land");
+  sleep(5);
 
-    /*bool cent = false;
+  /*bool cent = false;
 
-    for (;;){
-        cout<<"IMU info ..."<<endl;
-        imu = tello->getIMU();
-        
-        for (int i=0; i<imu.size(); i++){
-            cout<<imu[i].x<<endl;
-            cout<<imu[i].y<<endl;
-            cout<<imu[i].z<<endl;
-        }
-        sleep(1);
-    }*/
-    
-    return 0;
+  for (;;){
+      cout<<"IMU info ..."<<endl;
+      imu = tello->getIMU();
+
+      for (int i=0; i<imu.size(); i++){
+          cout<<imu[i].x<<endl;
+          cout<<imu[i].y<<endl;
+          cout<<imu[i].z<<endl;
+      }
+      sleep(1);
+  }*/
+
+  return 0;
 }
 
 /*
     SocketUdp commandSender("192.168.10.1", 8889, 1024);
-    commandSender.bindServer(); 
+    commandSender.bindServer();
     tello = new Tello;
         commandSender.sending(msgs);
         rec = commandSender.receiving();
@@ -81,6 +82,3 @@ int main (int argc, char **argv){
             break;
         }
     }*/
-
-
-
