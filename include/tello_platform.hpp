@@ -7,7 +7,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
-#include <Eigen/src/Core/Matrix.h>
 #include <string.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <Eigen/Dense>
