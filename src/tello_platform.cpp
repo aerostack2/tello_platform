@@ -151,14 +151,12 @@ bool TelloPlatform::ownSendCommand() {
 }
 
 bool TelloPlatform::ownSetArmingState(bool state) {
-  bool resp;
-  bool ret = state;
-
+  bool resp = state;
   if (state && !this->connected_) {
     resp = tello->sendCommand("command");
     return resp;
   }
-  return ret;
+  return resp;
 }
 
 bool TelloPlatform::ownSetOffboardControl(bool offboard) {
@@ -174,22 +172,24 @@ bool TelloPlatform::ownSetPlatformControlMode(const as2_msgs::msg::ControlMode& 
 }
 
 bool TelloPlatform::ownTakeoff() {
+  bool resp = false;
   if (this->connected_) {
-    tello->sendCommand("takeoff");  // TODO: return if takeoff ok
+    resp = tello->sendCommand("takeoff");
 
     reference_point_ = {0, 0, tello->getHeight(), 0};
-    return true;
+    return resp;
   }
-  return false;
+  return resp;
 }
 
 bool TelloPlatform::ownLand() {
+  bool resp = false;
   if (this->connected_) {
-    tello->sendCommand("land");  // TODO: return if land ok
+    resp = tello->sendCommand("land");
 
-    return true;
+    return resp;
   }
-  return false;
+  return resp;
 }
 
 // **********************************************************
