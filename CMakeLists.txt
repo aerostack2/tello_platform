@@ -34,11 +34,11 @@ foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
 endforeach()
 
 set(HEADER_HPP_FILES
-  tello_connection/include/socketudp.hpp
+  tello_connection/include/socket_udp.hpp
   tello_connection/include/tello.hpp
 )
 set(SOURCE_CPP_FILES
-  tello_connection/src/socketUdp.cpp
+  tello_connection/src/socket_udp.cpp
   tello_connection/src/tello.cpp
   src/${PROJECT_NAME}.cpp
   src/${PROJECT_NAME}_node.cpp
