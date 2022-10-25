@@ -4,9 +4,9 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <boost/algorithm/string.hpp>
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>

@@ -3,6 +3,18 @@
 #include <sys/socket.h>
 #include <iostream>
 
+static std::vector<std::string> split(const std::string& target, char c) {
+  std::string temp;
+  std::stringstream stringstream{target};
+  std::vector<std::string> result;
+
+  while (std::getline(stringstream, temp, c)) {
+    result.push_back(temp);
+  }
+
+  return result;
+}
+
 Tello::Tello() {
   commandSender = new SocketUdp;
   stateRecv     = new SocketUdp;
@@ -88,14 +100,13 @@ std::pair<bool, std::vector<double>> Tello::getState() {
   return ret;
 }
 
-// TODO replace boost with std
 bool Tello::filterState(std::string data) {
   bool success = true;
   std::vector<std::string> values, values_;
-  boost::split(values, data, boost::is_any_of(";"));
+  values = split(data, ';');
   for (int value_idx = 0; value_idx < static_cast<int>(values.size()); value_idx++) {
     if (values[value_idx].length() != 0) {
-      boost::split(values_, values[value_idx], boost::is_any_of(":"));
+      values_ = split(values[value_idx], ':');
       // cout<<values[value_idx]<<endl;
       if (value_idx <= static_cast<int>(state.size())) {
         state[value_idx] = stod(values_[1]);
