@@ -151,16 +151,12 @@ bool TelloPlatform::ownSendCommand() {
 }
 
 bool TelloPlatform::ownSetArmingState(bool state) {
-  std::pair<bool, std::string> resp;
+  bool resp;
   bool ret = state;
 
   if (state && !this->connected_) {
-    resp = tello->sendCommand("command");  // TODO: send command --> bool
-    if (resp.first == true and resp.second != "Error") {
-      ret = true;
-    } else {
-      ret = false;
-    }
+    resp = tello->sendCommand("command");
+    return resp;
   }
   return ret;
 }
@@ -200,7 +196,7 @@ bool TelloPlatform::ownLand() {
 // ******************** CALLBACK METHODS ********************
 // **********************************************************
 void TelloPlatform::recvIMU() {
-  std::vector<coordinates> imu_info = tello->getIMU();
+  std::array<coordinates, 3> imu_info = tello->getIMU();
 
   tf2::Quaternion q;
   float roll_rad  = float(imu_info[0].x * M_PI) / 180;

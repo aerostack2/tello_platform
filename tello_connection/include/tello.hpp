@@ -1,6 +1,7 @@
 #ifndef TELLO_H
 #define TELLO_H
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -11,7 +12,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include "socketudp.hpp"
+#include "socket_udp.hpp"
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -28,25 +29,29 @@ struct coordinates {
 
 class Tello {
 private:
-  SocketUdp* commandSender;
-  SocketUdp* stateRecv;
-  // State information.
-  std::vector<double> state;
-  coordinates orientation;
-  coordinates velocity;
-  coordinates acceleration;
+  SocketUdp* commandSender_;
+  SocketUdp* stateRecv_;
 
-  double battery;
+  // State information.
+  bool connected_;
+
+  std::array<double, 16> state_;
+  coordinates orientation_;
+  coordinates velocity_;
+  coordinates acceleration_;
+
+  double battery_;
   double timeMotor;
   double timeOF;
-  double height;
-  double barometer;
+  double height_;
+  double barometer_;
 
-  cv::Mat frame;
-  bool connected;
+  std::array<coordinates, 3> imu_;
+
+  cv::Mat frame_;
 
 private:
-  bool filterState(std::string data);
+  bool parseState(const std::string& data, std::array<double, 16>& state);
   void update();
   void threadStateFnc();
 
@@ -54,19 +59,19 @@ public:
   Tello();   // creating sockets
   ~Tello();  // closing sockets
 
-  std::pair<bool, std::vector<double>> getState();
-  std::pair<bool, std::string> sendCommand(std::string command);
+  bool getState();
+  bool sendCommand(const std::string& command);
 
-  std::vector<coordinates> getIMU();
-  coordinates getOrientation();
-  coordinates getVelocity();
-  coordinates getAcceleration();
-  double getBarometer();
-  bool isConnected();
-  double getHeight();
+  inline bool isConnected() { return connected_; }
+  inline std::array<coordinates, 3> getIMU() { return imu_; }
+  inline coordinates getOrientation() { return orientation_; }
+  inline coordinates getVelocity() { return velocity_; }
+  inline coordinates getAcceleration() { return acceleration_; }
+  inline double getBarometer() { return barometer_; }
+  inline double getHeight() { return height_; }
+  inline double getBattery() { return battery_; }
+  // cv::Mat getFrame();
   void streamVideo();
-  double getBattery();
-  cv::Mat getFrame();
 
   bool x_motion(double x);                                     // Forward or backward move.
   bool y_motion(double y);                                     // right or left move.
