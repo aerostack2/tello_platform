@@ -45,6 +45,7 @@
 #include <cmath>
 #include <memory>
 #include <vector>
+#include "opencv2/core.hpp"
 
 #include "tello/tello.hpp"
 
@@ -61,18 +62,23 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/battery_state.hpp"
+#include "sensor_msgs/msg/camera_info.hpp"
+#include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/string.hpp"
 
 class TelloPlatform : public as2::AerialPlatform {
 private:
   Tello* tello;
+  double sensor_freq_;
   rclcpp::TimerBase::SharedPtr timer_;
-  std::unique_ptr<as2::sensors::Imu> imu_sensor_ptr_;
-  std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_ptr_;  // TODO: not used
-  std::unique_ptr<as2::sensors::Battery> battery_ptr_;
-  std::unique_ptr<as2::sensors::Barometer> barometer_ptr_;
-  // std::unique_ptr<as2::sensors::Camera> image_ptr_;
+  std::shared_ptr<as2::sensors::Imu> imu_sensor_ptr_;
+  std::shared_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_ptr_;  // TODO: not used
+  std::shared_ptr<as2::sensors::Battery> battery_ptr_;
+  std::shared_ptr<as2::sensors::Barometer> barometer_ptr_;
+  rclcpp::TimerBase::SharedPtr cam_timer_;
+  std::shared_ptr<as2::sensors::Camera> camera_ptr_;
+
   bool connected_ = false;
   as2_msgs::msg::ControlMode control_mode_in_;
   double min_speed_;
@@ -87,9 +93,11 @@ private:
   void recvIMU();
   void recvBattery();
   void recvBarometer();
+  void recvVideo();
+
   double normalize(double value, double min_value, double max_value);
   double normalizeDegrees(double value);
-  // void recvVideo();
+
 public:
   TelloPlatform();
   ~TelloPlatform();

@@ -70,6 +70,7 @@ public:
   inline double getBarometer() { return barometer_; }
   inline double getHeight() { return height_; }
   inline double getBattery() { return battery_; }
+  inline cv::Mat getFrame() { return frame_; }
 
   void streamVideo();
 

@@ -46,13 +46,18 @@ TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
   this->get_parameter("maxSpeed", max_speed_);
   configureSensors();
 
-  // TODO: set command freq
+  this->declare_parameter<double>("sensor_freq");
+  this->get_parameter("sensor_freq", sensor_freq_);
 
-  this->timer_ = this->create_wall_timer(std::chrono::milliseconds(10), [this]() {
-    recvIMU();
-    recvBattery();
-    recvBarometer();
-  });
+  this->timer_ =
+      this->create_wall_timer(std::chrono::duration<double>(1.0f / sensor_freq_), [this]() {
+        recvIMU();
+        recvBattery();
+        recvBarometer();
+      });
+
+  this->cam_timer_ =
+      this->create_wall_timer(std::chrono::duration<double>(1.0f / 10), [this]() { recvVideo(); });
 }
 
 TelloPlatform::~TelloPlatform() {
@@ -64,12 +69,15 @@ TelloPlatform::~TelloPlatform() {
 // ***************** Aerial Platform Methods ***************
 // *********************************************************
 void TelloPlatform::configureSensors() {
-  imu_sensor_ptr_ = std::make_unique<as2::sensors::Imu>("imu", this);
-  battery_ptr_    = std::make_unique<as2::sensors::Battery>("battery", this);
-  barometer_ptr_  = std::make_unique<as2::sensors::Barometer>("barometer", this);
+  imu_sensor_ptr_ = std::make_shared<as2::sensors::Imu>("imu", this);
+  battery_ptr_    = std::make_shared<as2::sensors::Battery>("battery", this);
+  barometer_ptr_  = std::make_shared<as2::sensors::Barometer>("barometer", this);
   // TODO: De donde saco la odometria
-  odometry_ptr_ = std::make_unique<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
-  // image_ptr_ = std::make_unique<as2::sensors::Camera>("camera", this);
+  odometry_ptr_ = std::make_shared<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
+  camera_ptr_   = std::make_shared<as2::sensors::Camera>("camera", this);
+
+  sensor_msgs::msg::CameraInfo cam_info;  // TODO
+  camera_ptr_->setParameters(cam_info, "bgr8", "pinhole");
 }
 
 bool TelloPlatform::ownSendCommand() {
@@ -236,6 +244,11 @@ void TelloPlatform::recvBarometer() {
   barometer_ptr_->updateData(barometer_msg);
 }
 
+void TelloPlatform::recvVideo() {
+  cv::Mat frame = tello->getFrame();
+  camera_ptr_->updateData(frame);
+}
+
 // **********************************************************
 // ******************** AUXILIAR METHODS ********************
 // **********************************************************
@@ -264,12 +277,3 @@ double TelloPlatform::normalizeDegrees(double value) {
   }
   return value;
 }
-
-/*void TelloPlatform::recvVideo(){
-  Mat frame = tello->getFrame();
-  if (!frame.empty())
-  {
-      imshow("CTello Stream", frame);
-  }
-
-}*/
