@@ -46,8 +46,6 @@ Tello::~Tello() {
 }
 
 bool Tello::sendCommand(const std::string& command) {
-  std::pair<bool, std::string> ret;
-  bool success         = false;
   uint cont            = 0;
   const int timeLimit  = 10;
   std::string msgsBack = "";
@@ -57,7 +55,7 @@ bool Tello::sendCommand(const std::string& command) {
     sleep(1);  // FIXME
     msgsBack = commandSender_->receiving();
     cont++;
-    // cout<<cont<<endl;
+    // cout << cont << endl;
   } while ((msgsBack.length() == 0) && (cont <= timeLimit));
 
   if (cont > timeLimit) {
@@ -135,14 +133,12 @@ void Tello::streamVideo() {
 
   if (response) {
     cv::VideoCapture capture{URL_stream, cv::CAP_FFMPEG};
-    while (true) {
-      capture >> frame_;
+    cv::Mat frame;
 
-      if (!frame_.empty()) {
-        cv::imshow("Tello Stream", frame_);  // FIXME
-      }
-      if (cv::waitKey(1) == 27) {
-        break;
+    while (true) {
+      capture >> frame;
+      if (!frame.empty()) {
+        frame_ = frame;
       }
     }
   }
