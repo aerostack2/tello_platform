@@ -46,7 +46,7 @@
 #include <memory>
 #include <vector>
 
-#include "tello.hpp"
+#include "tello/tello.hpp"
 
 #include "as2_core/aerial_platform.hpp"
 #include "as2_core/core_functions.hpp"

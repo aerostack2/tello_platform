@@ -33,20 +33,15 @@ foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
 endforeach()
 
-set(HEADER_HPP_FILES
-  tello_connection/include/socket_udp.hpp
-  tello_connection/include/tello.hpp
-)
+add_subdirectory(tello)
+
 set(SOURCE_CPP_FILES
-  tello_connection/src/socket_udp.cpp
-  tello_connection/src/tello.cpp
   src/${PROJECT_NAME}.cpp
   src/${PROJECT_NAME}_node.cpp
 )
 
 include_directories(
   include
-  tello_connection/include
   ${EIGEN3_INCLUDE_DIRS}
 )
 
@@ -55,6 +50,7 @@ add_executable(${PROJECT_NAME}_node ${SOURCE_CPP_FILES})
 ament_target_dependencies(${PROJECT_NAME}_node ${PROJECT_DEPENDENCIES})
 target_link_libraries(${PROJECT_NAME}_node 
   ${OpenCV_LIBS}
+  tello
 )
 
 if(BUILD_TESTING)
