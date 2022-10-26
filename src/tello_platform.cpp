@@ -37,8 +37,8 @@
 #include "tello_platform.hpp"
 
 TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
-  this->tello      = new Tello;
-  this->connected_ = true;
+  this->tello      = std::make_unique<Tello>();
+  this->connected_ = this->tello->connect();
 
   this->declare_parameter<double>("minSpeed", 0.02);
   this->declare_parameter<double>("maxSpeed", 15.0);
@@ -60,10 +60,7 @@ TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
       this->create_wall_timer(std::chrono::duration<double>(1.0f / 10), [this]() { recvVideo(); });
 }
 
-TelloPlatform::~TelloPlatform() {
-  this->tello->~Tello();
-  delete (this->tello);
-}
+TelloPlatform::~TelloPlatform() {}
 
 // *********************************************************
 // ***************** Aerial Platform Methods ***************
@@ -76,7 +73,7 @@ void TelloPlatform::configureSensors() {
   odometry_ptr_ = std::make_shared<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
   camera_ptr_   = std::make_shared<as2::sensors::Camera>("camera", this);
 
-  sensor_msgs::msg::CameraInfo cam_info;  // TODO
+  sensor_msgs::msg::CameraInfo cam_info;  // TODO: fill camera info
   camera_ptr_->setParameters(cam_info, "bgr8", "pinhole");
 }
 

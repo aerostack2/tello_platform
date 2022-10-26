@@ -29,8 +29,11 @@ struct coordinates {
 
 class Tello {
 private:
-  SocketUdp* commandSender_;
-  SocketUdp* stateRecv_;
+  std::thread stateThd_;
+  std::thread videoThd_;
+
+  std::unique_ptr<SocketUdp> commandSender_;  // TODO: change to smart pointer
+  std::unique_ptr<SocketUdp> stateRecv_;
 
   // State information.
   bool connected_;
@@ -58,6 +61,8 @@ private:
 public:
   Tello();   // creating sockets
   ~Tello();  // closing sockets
+
+  bool connect();
 
   bool getState();
   bool sendCommand(const std::string& command);

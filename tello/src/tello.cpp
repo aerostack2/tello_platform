@@ -13,36 +13,40 @@ static std::vector<std::string> split(const std::string& target, char c) {
 }
 
 Tello::Tello() {
-  commandSender_ = new SocketUdp;
-  stateRecv_     = new SocketUdp;
+  commandSender_ = std::make_unique<SocketUdp>();
+  stateRecv_     = std::make_unique<SocketUdp>();
 
   commandSender_->setIP((char*)IP_command);
   commandSender_->setPort(port_command);
 
   stateRecv_->setPort(port_state);
+}
 
+Tello::~Tello() {
+  connected_ = false;
+  if (stateThd_.joinable()) {
+    stateThd_.join();
+  }
+  if (videoThd_.joinable()) {
+    videoThd_.join();
+  }
+  std::cout << "Clean exit." << std::endl;
+}
+
+bool Tello::connect() {
   commandSender_->bindServer();
 
-  bool response = sendCommand("command");
-  if (!response) {
+  connected_ = sendCommand("command");
+  if (!connected_) {
     std::cout << "Error: Connecting to tello" << std::endl;
-    exit(-1);  // FIXME
+    return false;
   }
   stateRecv_->bindServer();
   update();
 
-  std::thread stateThd(&Tello::threadStateFnc, this);
-  stateThd.detach();
-  std::thread videoThd(&Tello::streamVideo, this);
-  videoThd.detach();
-}
-
-Tello::~Tello() {
-  commandSender_->~SocketUdp();
-  stateRecv_->~SocketUdp();
-
-  delete (commandSender_);
-  delete (stateRecv_);
+  stateThd_ = std::thread(&Tello::threadStateFnc, this);
+  videoThd_ = std::thread(&Tello::streamVideo, this);
+  return connected_;
 }
 
 bool Tello::sendCommand(const std::string& command) {
@@ -68,10 +72,27 @@ bool Tello::sendCommand(const std::string& command) {
 void Tello::threadStateFnc() {
   bool resp;
 
-  for (;;) {
+  while (connected_) {
     resp = getState();
     if (resp) update();
     sleep(0.2);  // FIXME
+  }
+}
+
+void Tello::streamVideo() {
+  bool response = sendCommand("streamon");
+
+  if (response) {
+    cv::VideoCapture capture{URL_stream, cv::CAP_FFMPEG};
+    cv::Mat frame;
+
+    while (connected_) {
+      capture >> frame;
+      if (!frame.empty()) {
+        frame_ = frame;
+      }
+    }
+    capture.release();
   }
 }
 
@@ -126,22 +147,6 @@ void Tello::update() {
   imu_[0] = orientation_;
   imu_[1] = velocity_;
   imu_[2] = acceleration_;
-}
-
-void Tello::streamVideo() {
-  bool response = sendCommand("streamon");
-
-  if (response) {
-    cv::VideoCapture capture{URL_stream, cv::CAP_FFMPEG};
-    cv::Mat frame;
-
-    while (true) {
-      capture >> frame;
-      if (!frame.empty()) {
-        frame_ = frame;
-      }
-    }
-  }
 }
 
 // Forward or backward move.
