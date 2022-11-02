@@ -1,10 +1,6 @@
 #ifndef TELLO_H
 #define TELLO_H
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -20,6 +16,7 @@
 
 const int port_command = 8889;
 const int port_state   = 8890;
+// const char* const IP_command{"127.0.0.1"};
 const char* const IP_command{"192.168.10.1"};
 const char* const URL_stream{"udp://0.0.0.0:11111"};
 
@@ -32,7 +29,7 @@ private:
   std::thread stateThd_;
   std::thread videoThd_;
 
-  std::unique_ptr<SocketUdp> commandSender_;  // TODO: change to smart pointer
+  std::unique_ptr<SocketUdp> commandSender_;
   std::unique_ptr<SocketUdp> stateRecv_;
 
   // State information.

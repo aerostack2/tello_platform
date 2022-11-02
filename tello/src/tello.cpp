@@ -13,13 +13,8 @@ static std::vector<std::string> split(const std::string& target, char c) {
 }
 
 Tello::Tello() {
-  commandSender_ = std::make_unique<SocketUdp>();
-  stateRecv_     = std::make_unique<SocketUdp>();
-
-  commandSender_->setIP((char*)IP_command);
-  commandSender_->setPort(port_command);
-
-  stateRecv_->setPort(port_state);
+  commandSender_ = std::make_unique<SocketUdp>(IP_command, port_command);
+  stateRecv_     = std::make_unique<SocketUdp>("0.0.0.0", port_state);
 }
 
 Tello::~Tello() {
@@ -34,13 +29,12 @@ Tello::~Tello() {
 }
 
 bool Tello::connect() {
-  commandSender_->bindServer();
-
   connected_ = sendCommand("command");
   if (!connected_) {
-    std::cout << "Error: Connecting to tello" << std::endl;
+    std::cout << "Error: Connecting to Tello" << std::endl;
     return false;
   }
+  std::cout << "Tello connection established!" << std::endl;
   stateRecv_->bindServer();
   update();
 
@@ -51,22 +45,21 @@ bool Tello::connect() {
 
 bool Tello::sendCommand(const std::string& command) {
   uint cont            = 0;
-  const int timeLimit  = 10;
+  const int timeLimit  = 5;
   std::string msgsBack = "";
-  // std::cout << command << std::endl;
+
   do {
     commandSender_->sending(command);
     sleep(1);  // FIXME
     msgsBack = commandSender_->receiving();
     cont++;
-    // cout << cont << endl;
   } while ((msgsBack.length() == 0) && (cont <= timeLimit));
 
   if (cont > timeLimit) {
     std::cout << "The command '" << command << "' is not received." << std::endl;
     return false;
   }
-  return msgsBack == "ok";
+  return strcmp(msgsBack.c_str(), "ok") == 0;
 }
 
 void Tello::threadStateFnc() {

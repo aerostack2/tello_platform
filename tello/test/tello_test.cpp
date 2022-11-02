@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
         }
     }
     //////////////////////////////////////////////////////////////
-    /*
+
     do{
         commandSender.sending("streamon");
         cout<<"que porculo"<<endl;
