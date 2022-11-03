@@ -35,6 +35,7 @@
  ********************************************************************************/
 
 #include "tello_platform.hpp"
+#include <as2_core/utils/tf_utils.hpp>
 
 TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
   this->tello      = std::make_unique<Tello>();
@@ -48,6 +49,9 @@ TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
 
   this->declare_parameter<double>("sensor_freq");
   this->get_parameter("sensor_freq", sensor_freq_);
+
+  odom_frame_id_      = as2::tf::generateTfName(this, "odom");
+  base_link_frame_id_ = as2::tf::generateTfName(this, "base_link");
 
   this->timer_ =
       this->create_wall_timer(std::chrono::duration<double>(1.0f / sensor_freq_), [this]() {
@@ -243,15 +247,16 @@ void TelloPlatform::recvBarometer() {
 
 void TelloPlatform::recvOdometry() {
   nav_msgs::msg::Odometry odom_msg;
-  odom_msg.header.stamp    = this->get_clock()->now();
-  odom_msg.header.frame_id = "odom";
-  // odom_msg.pose.pose.position.x = 0.0;
-  // odom_msg.pose.pose.position.y = 0.0;
-  odom_msg.pose.pose.position.z = tello->getHeight();
+  odom_msg.header.stamp = this->get_clock()->now();
+
+  odom_msg.header.frame_id = odom_frame_id_;
+  odom_msg.child_frame_id  = base_link_frame_id_;
+
+  odom_msg.pose.pose.position.z = tello->getHeight() / 100.0;
   auto rpy                      = tello->getOrientation();
-  float roll_rad                = float(rpy.x * M_PI) / 180;
-  float pitch_rad               = float(rpy.y * M_PI) / 180;
-  float yaw_rad                 = float(rpy.z * M_PI) / 180;
+  float roll_rad                = float(rpy.x * M_PI) / 180.0;
+  float pitch_rad               = float(rpy.y * M_PI) / 180.0;
+  float yaw_rad                 = float(rpy.z * M_PI) / 180.0;
   tf2::Quaternion q;
   q.setRPY(roll_rad, pitch_rad, yaw_rad);
   odom_msg.pose.pose.orientation.w = q.w();
@@ -260,10 +265,9 @@ void TelloPlatform::recvOdometry() {
   odom_msg.pose.pose.orientation.z = q.z();
 
   auto twist                    = tello->getVelocity();
-  odom_msg.twist.twist.linear.x = twist.x;
-  odom_msg.twist.twist.linear.y = twist.y;
-  odom_msg.twist.twist.linear.z = twist.z;
-  // odom_msg.twist.twist.angular.x = 0.0;
+  odom_msg.twist.twist.linear.x = twist.x / 100.0;
+  odom_msg.twist.twist.linear.y = twist.y / 100.0;
+  odom_msg.twist.twist.linear.z = twist.z / 100.0;
   odometry_ptr_->updateData(odom_msg);
 }
 

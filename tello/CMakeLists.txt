@@ -10,6 +10,7 @@ include_directories(
 )
 
 find_package(OpenCV REQUIRED)
+find_package(Threads REQUIRED)
 
 set(CPP_FILES
   src/socket_udp.cpp
@@ -20,6 +21,8 @@ set(CPP_FILES
 add_library(${PROJECT_NAME} ${CPP_FILES})
 target_link_libraries(${PROJECT_NAME}
     ${OpenCV_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    # pthread
 )
 target_include_directories(${PROJECT_NAME}
   PUBLIC

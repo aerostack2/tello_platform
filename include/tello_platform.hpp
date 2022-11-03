@@ -89,6 +89,9 @@ private:
   std::vector<double> reference_point_ = {0.0, 0.0, 0.0, 0.0};  // x, y, z, yaw
   std::vector<double> reference_speed_ = {0.0, 0.0, 0.0, 0.0};  // vx, vy, vz, vyaw
 
+  std::string odom_frame_id_      = "odom";
+  std::string base_link_frame_id_ = "base_link";
+
 private:
   void recvIMU();
   void recvBattery();
