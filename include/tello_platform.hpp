@@ -73,7 +73,7 @@ private:
   double sensor_freq_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<as2::sensors::Imu> imu_sensor_ptr_;
-  std::shared_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_ptr_;  // TODO: not used
+  std::shared_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_ptr_;
   std::shared_ptr<as2::sensors::Battery> battery_ptr_;
   std::shared_ptr<as2::sensors::Barometer> barometer_ptr_;
   rclcpp::TimerBase::SharedPtr cam_timer_;
@@ -93,6 +93,7 @@ private:
   void recvIMU();
   void recvBattery();
   void recvBarometer();
+  void recvOdometry();
   void recvVideo();
 
   double normalize(double value, double min_value, double max_value);

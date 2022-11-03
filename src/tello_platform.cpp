@@ -54,6 +54,7 @@ TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
         recvIMU();
         recvBattery();
         recvBarometer();
+        recvOdometry();
       });
 
   this->cam_timer_ =
@@ -69,7 +70,6 @@ void TelloPlatform::configureSensors() {
   imu_sensor_ptr_ = std::make_shared<as2::sensors::Imu>("imu", this);
   battery_ptr_    = std::make_shared<as2::sensors::Battery>("battery", this);
   barometer_ptr_  = std::make_shared<as2::sensors::Barometer>("barometer", this);
-  // TODO: De donde saco la odometria
   odometry_ptr_ = std::make_shared<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
   camera_ptr_   = std::make_shared<as2::sensors::Camera>("camera", this);
 
@@ -239,6 +239,32 @@ void TelloPlatform::recvBarometer() {
   barometer_msg.header.stamp   = this->get_clock()->now();
   barometer_msg.fluid_pressure = tello->getBarometer();
   barometer_ptr_->updateData(barometer_msg);
+}
+
+void TelloPlatform::recvOdometry() {
+  nav_msgs::msg::Odometry odom_msg;
+  odom_msg.header.stamp    = this->get_clock()->now();
+  odom_msg.header.frame_id = "odom";
+  // odom_msg.pose.pose.position.x = 0.0;
+  // odom_msg.pose.pose.position.y = 0.0;
+  odom_msg.pose.pose.position.z = tello->getHeight();
+  auto rpy                      = tello->getOrientation();
+  float roll_rad                = float(rpy.x * M_PI) / 180;
+  float pitch_rad               = float(rpy.y * M_PI) / 180;
+  float yaw_rad                 = float(rpy.z * M_PI) / 180;
+  tf2::Quaternion q;
+  q.setRPY(roll_rad, pitch_rad, yaw_rad);
+  odom_msg.pose.pose.orientation.w = q.w();
+  odom_msg.pose.pose.orientation.x = q.x();
+  odom_msg.pose.pose.orientation.y = q.y();
+  odom_msg.pose.pose.orientation.z = q.z();
+
+  auto twist                    = tello->getVelocity();
+  odom_msg.twist.twist.linear.x = twist.x;
+  odom_msg.twist.twist.linear.y = twist.y;
+  odom_msg.twist.twist.linear.z = twist.z;
+  // odom_msg.twist.twist.angular.x = 0.0;
+  odometry_ptr_->updateData(odom_msg);
 }
 
 void TelloPlatform::recvVideo() {
