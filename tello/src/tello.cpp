@@ -44,22 +44,23 @@ bool Tello::connect() {
 }
 
 bool Tello::sendCommand(const std::string& command) {
-  uint cont            = 0;
-  const int timeLimit  = 5;
-  std::string msgsBack = "";
+  uint cont             = 0;
+  const int time_limit  = 5;
+  std::string msgs_back = "";
 
   do {
     commandSender_->sending(command);
     sleep(1);  // FIXME
-    msgsBack = commandSender_->receiving();
+    msgs_back = commandSender_->receiving();
     cont++;
-  } while ((msgsBack.length() == 0) && (cont <= timeLimit));
+  } while ((msgs_back.length() == 0) && (cont <= time_limit));
 
-  if (cont > timeLimit) {
+  if (cont > time_limit) {
     std::cout << "The command '" << command << "' is not received." << std::endl;
     return false;
   }
-  return strcmp(msgsBack.c_str(), "ok") == 0;
+  std::cout << command << " --> " << msgs_back << std::endl;
+  return strcmp(msgs_back.c_str(), "ok") == 0;
 }
 
 void Tello::threadStateFnc() {

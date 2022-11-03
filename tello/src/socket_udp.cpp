@@ -63,7 +63,7 @@ bool SocketUdp::bindServer() {
 }
 
 bool SocketUdp::sending(std::string message) {
-  bool sendOK = true;
+  bool send_ok = true;
   const std::vector<unsigned char> msgs{std::cbegin(message), std::cend(message)};
   const socklen_t dest_addr_len{sizeof(dest_addr_)};
 
@@ -71,14 +71,15 @@ bool SocketUdp::sending(std::string message) {
                  dest_addr_len);
   if (n < 0) {
     std::cout << "sending: It has been impossible to send the message " << message << std::endl;
-    sendOK = false;
+    send_ok = false;
   }
-  return sendOK;
+  return send_ok;
 }
 
 std::string SocketUdp::receiving(const int flags) {
   std::string msg;
   socklen_t serv_addr_len{sizeof(dest_addr_)};
+  buffer_.clear();
   int n = recvfrom(socket_fd_, buffer_.data(), buffer_.size(), flags,
                    reinterpret_cast<sockaddr*>(&dest_addr_), &serv_addr_len);
 
