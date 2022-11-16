@@ -74,20 +74,34 @@ void TelloPlatform::configureSensors() {
   imu_sensor_ptr_ = std::make_shared<as2::sensors::Imu>("imu", this);
   battery_ptr_    = std::make_shared<as2::sensors::Battery>("battery", this);
   barometer_ptr_  = std::make_shared<as2::sensors::Barometer>("barometer", this);
-  odometry_ptr_ = std::make_shared<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
-  camera_ptr_   = std::make_shared<as2::sensors::Camera>("camera", this);
+  odometry_ptr_   = std::make_shared<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odom", this);
+  camera_ptr_     = std::make_shared<as2::sensors::Camera>("camera", this);
 
   sensor_msgs::msg::CameraInfo cam_info;  // TODO: fill camera info
   camera_ptr_->setParameters(cam_info, "bgr8", "pinhole");
 }
 
 bool TelloPlatform::ownSendCommand() {
+  if (as2::control_mode::isHoverMode(this->getControlMode())) {
+    bool speed_send = tello->speedMotion(0, 0, 0, 0);
+
+    if (!speed_send) {
+      RCLCPP_ERROR(this->get_logger(), "Error sending Hover control command");
+      return false;
+    }
+    return true;
+  }
+
   const uint8_t pose_control_mode = as2::control_mode::convertToUint8t(
       as2_msgs::msg::ControlMode::POSITION, as2_msgs::msg::ControlMode::YAW_ANGLE,
       as2_msgs::msg::ControlMode::BODY_FLU_FRAME);
 
   const uint8_t speed_control_mode = as2::control_mode::convertToUint8t(
       as2_msgs::msg::ControlMode::SPEED, as2_msgs::msg::ControlMode::YAW_SPEED,
+      as2_msgs::msg::ControlMode::BODY_FLU_FRAME);
+
+  const uint8_t speed_plane_control_mode = as2::control_mode::convertToUint8t(
+      as2_msgs::msg::ControlMode::SPEED_IN_A_PLANE, as2_msgs::msg::ControlMode::YAW_SPEED,
       as2_msgs::msg::ControlMode::BODY_FLU_FRAME);
 
   switch (as2::control_mode::convertToUint8t(this->getControlMode())) {
@@ -105,21 +119,21 @@ bool TelloPlatform::ownSendCommand() {
         double z   = std::clamp(z_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
         double yaw = normalizeDegrees(yaw_rad * 180 / M_PI);                     // degrees
 
-        bool xSend   = tello->x_motion(x);
-        bool ySend   = tello->y_motion(y);
-        bool zSend   = tello->z_motion(z);
-        bool yawSend = tello->yaw_twist(yaw);
+        bool x_send   = tello->x_motion(x);
+        bool y_send   = tello->y_motion(y);
+        bool z_send   = tello->z_motion(z);
+        bool yaw_send = tello->yaw_twist(yaw);
 
-        if (!xSend) {
+        if (!x_send) {
           RCLCPP_ERROR(this->get_logger(), "Sending X position command failed.");
           return false;
-        } else if (!ySend) {
+        } else if (!y_send) {
           RCLCPP_ERROR(this->get_logger(), "Sending Y position command failed.");
           return false;
-        } else if (!zSend) {
+        } else if (!z_send) {
           RCLCPP_ERROR(this->get_logger(), "Sending Z position failed.");
           return false;
-        } else if (!yawSend) {
+        } else if (!yaw_send) {
           RCLCPP_ERROR(this->get_logger(), "Sending Yaw orientation failed.");
           return false;
         }
@@ -155,7 +169,42 @@ bool TelloPlatform::ownSendCommand() {
       }
       return true;
     }
-  };
+    case speed_plane_control_mode: {
+      double z_m = this->command_pose_msg_.pose.position.z;  // m
+      double z_  = z_m - tello->getHeight() / 100;           // m
+
+      double vx_   = this->command_twist_msg_.twist.linear.x;   // m/s
+      double vy_   = this->command_twist_msg_.twist.linear.y;   // m/s
+      double vyaw_ = this->command_twist_msg_.twist.angular.z;  // rad/s
+
+      std::vector<double> new_ref = {vx_, vy_, z_, vyaw_};
+      if (reference_speed_ != new_ref) {
+        double z    = std::clamp(z_, min_linear_pose_, max_linear_pose_) * 100;  // cm
+        bool z_send = tello->z_motion(z);
+        if (!z_send) {
+          RCLCPP_ERROR(this->get_logger(), "Sending Z position failed.");
+          // return false;
+        }
+
+        double vx   = std::clamp(vx_, min_speed_, max_speed_);
+        vx          = normalize(vx, min_speed_, max_speed_);  // %
+        double vy   = std::clamp(vy_, min_speed_, max_speed_);
+        vy          = normalize(vy, min_speed_, max_speed_);  // %
+        double vyaw = std::clamp(vyaw_, min_speed_, max_speed_);
+        vyaw        = normalize(vyaw, min_speed_, max_speed_);  // %
+
+        bool speed_send = tello->speedMotion(vx, vy, 0, vyaw);
+
+        if (!speed_send) {
+          RCLCPP_ERROR(this->get_logger(), "Tello Platform: Error sending control speed command");
+          return false;
+        }
+
+        reference_speed_ = new_ref;
+      }
+      return true;
+    };
+  }
   return false;
 }
 
