@@ -78,7 +78,7 @@ private:
   std::shared_ptr<as2::sensors::Barometer> barometer_ptr_;
   rclcpp::TimerBase::SharedPtr cam_timer_;
   std::shared_ptr<as2::sensors::Camera> camera_ptr_;
-
+  nav_msgs::msg::Odometry odom_msg_;
   bool connected_ = false;
   as2_msgs::msg::ControlMode control_mode_in_;
   double min_speed_;
@@ -98,6 +98,7 @@ private:
   void recvBarometer();
   void recvOdometry();
   void recvVideo();
+  void resetOdometry();
 
   double normalize(double value, double min_value, double max_value);
   double normalizeDegrees(double value);

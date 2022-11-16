@@ -52,6 +52,7 @@ TelloPlatform::TelloPlatform() : as2::AerialPlatform() {
 
   odom_frame_id_      = as2::tf::generateTfName(this, "odom");
   base_link_frame_id_ = as2::tf::generateTfName(this, "base_link");
+  resetOdometry();
 
   this->timer_ =
       this->create_wall_timer(std::chrono::duration<double>(1.0f / sensor_freq_), [this]() {
@@ -257,9 +258,9 @@ void TelloPlatform::recvIMU() {
   std::array<coordinates, 3> imu_info = tello->getIMU();
 
   tf2::Quaternion q;
-  float roll_rad  = float(imu_info[0].x * M_PI) / 180;
-  float pitch_rad = float(imu_info[0].y * M_PI) / 180;
-  float yaw_rad   = float(imu_info[0].z * M_PI) / 180;
+  float roll_rad  = float(imu_info[0].x * M_PI) / 180.0;
+  float pitch_rad = float(imu_info[0].y * M_PI) / 180.0;
+  float yaw_rad   = float(imu_info[0].z * M_PI) / 180.0;
   q.setRPY(roll_rad, pitch_rad, yaw_rad);
 
   sensor_msgs::msg::Imu imu_msg;
@@ -269,12 +270,12 @@ void TelloPlatform::recvIMU() {
   imu_msg.orientation.y         = q.y();
   imu_msg.orientation.z         = q.z();
   imu_msg.orientation.w         = q.w();
-  imu_msg.angular_velocity.x    = imu_info[1].x;
-  imu_msg.angular_velocity.y    = imu_info[1].y;
-  imu_msg.angular_velocity.z    = imu_info[1].z;
-  imu_msg.linear_acceleration.x = imu_info[2].x;
-  imu_msg.linear_acceleration.y = imu_info[2].y;
-  imu_msg.linear_acceleration.z = imu_info[2].z;
+  imu_msg.angular_velocity.x    = imu_info[1].x * M_PI / 180.0;
+  imu_msg.angular_velocity.y    = imu_info[1].y * M_PI / 180.0;
+  imu_msg.angular_velocity.z    = imu_info[1].z * M_PI / 180.0;
+  imu_msg.linear_acceleration.x = imu_info[2].x / 1000.0;
+  imu_msg.linear_acceleration.y = imu_info[2].y / 1000.0;
+  imu_msg.linear_acceleration.z = imu_info[2].z / 1000.0;
 
   imu_sensor_ptr_->updateData(imu_msg);
 }
@@ -294,30 +295,47 @@ void TelloPlatform::recvBarometer() {
   barometer_ptr_->updateData(barometer_msg);
 }
 
+void integrate_speed(double vx, double vy, double& x, double& y, double dt) {
+  x += vx * dt;
+  y += vy * dt;
+}
+
+void TelloPlatform::resetOdometry() {
+  odom_msg_                      = nav_msgs::msg::Odometry();
+  odom_msg_.header.stamp         = this->get_clock()->now();
+  odom_msg_.pose.pose.position.x = 0;
+  odom_msg_.pose.pose.position.y = 0;
+}
+
 void TelloPlatform::recvOdometry() {
-  nav_msgs::msg::Odometry odom_msg;
-  odom_msg.header.stamp = this->get_clock()->now();
+  const auto now         = this->get_clock()->now();
+  double dt              = (now - odom_msg_.header.stamp).seconds();
+  odom_msg_.header.stamp = now;
 
-  odom_msg.header.frame_id = odom_frame_id_;
-  odom_msg.child_frame_id  = base_link_frame_id_;
+  odom_msg_.header.frame_id = odom_frame_id_;
+  odom_msg_.child_frame_id  = base_link_frame_id_;
 
-  odom_msg.pose.pose.position.z = tello->getHeight() / 100.0;
-  auto rpy                      = tello->getOrientation();
-  float roll_rad                = float(rpy.x * M_PI) / 180.0;
-  float pitch_rad               = float(rpy.y * M_PI) / 180.0;
-  float yaw_rad                 = float(rpy.z * M_PI) / 180.0;
+  odom_msg_.pose.pose.position.z = tello->getHeight() / 100.0;
+  auto rpy                       = tello->getOrientation();
+  float roll_rad                 = float(rpy.x * M_PI) / 180.0;
+  float pitch_rad                = float(rpy.y * M_PI) / 180.0;
+  float yaw_rad                  = float(rpy.z * M_PI) / 180.0;
   tf2::Quaternion q;
   q.setRPY(roll_rad, pitch_rad, yaw_rad);
-  odom_msg.pose.pose.orientation.w = q.w();
-  odom_msg.pose.pose.orientation.x = q.x();
-  odom_msg.pose.pose.orientation.y = q.y();
-  odom_msg.pose.pose.orientation.z = q.z();
+  odom_msg_.pose.pose.orientation.w = q.w();
+  odom_msg_.pose.pose.orientation.x = q.x();
+  odom_msg_.pose.pose.orientation.y = q.y();
+  odom_msg_.pose.pose.orientation.z = q.z();
 
-  auto twist                    = tello->getVelocity();
-  odom_msg.twist.twist.linear.x = twist.x / 100.0;
-  odom_msg.twist.twist.linear.y = twist.y / 100.0;
-  odom_msg.twist.twist.linear.z = twist.z / 100.0;
-  odometry_ptr_->updateData(odom_msg);
+  auto twist                     = tello->getVelocity();
+  odom_msg_.twist.twist.linear.x = twist.x / 100.0;
+  odom_msg_.twist.twist.linear.y = twist.y / 100.0;
+  odom_msg_.twist.twist.linear.z = twist.z / 100.0;
+
+  integrate_speed(odom_msg_.twist.twist.linear.x, odom_msg_.twist.twist.linear.y,
+                  odom_msg_.pose.pose.position.x, odom_msg_.pose.pose.position.y, dt);
+
+  odometry_ptr_->updateData(odom_msg_);
 }
 
 void TelloPlatform::recvVideo() {
