@@ -4,7 +4,6 @@ SocketUdp::SocketUdp(const std::string& host, int port, uint bufferSize) {
   std::cout << "Creating socket ..." << std::endl;
   host_ = host;
   port_ = port;
-  buffer_.resize(bufferSize, '\0');
 
   /* socket: create the socket */
   socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -79,7 +78,6 @@ bool SocketUdp::sending(std::string message) {
 std::string SocketUdp::receiving(const int flags) {
   std::string msg;
   socklen_t serv_addr_len{sizeof(dest_addr_)};
-  buffer_.clear();
   int n = recvfrom(socket_fd_, buffer_.data(), buffer_.size(), flags,
                    reinterpret_cast<sockaddr*>(&dest_addr_), &serv_addr_len);
 
