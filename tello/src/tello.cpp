@@ -30,10 +30,10 @@ Tello::~Tello() {
 
 bool Tello::connect() {
   connected_ = sendCommand("command");
-  if (!connected_) {
-    std::cout << "Error: Connecting to Tello" << std::endl;
-    return false;
-  }
+  // if (!connected_) {
+  //   std::cout << "Error: Connecting to Tello" << std::endl;
+  //   return false;
+  // }
   std::cout << "Tello connection established!" << std::endl;
   stateRecv_->bindServer();
   update();
@@ -49,9 +49,18 @@ bool Tello::sendCommand(const std::string& command) {
   std::string msgs_back = "";
 
   do {
+    commandSender_->receiving();
     commandSender_->sending(command);
-    sleep(1);  // FIXME
-    msgs_back = commandSender_->receiving();
+
+    for (auto i = 0; i < 10; i++) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));  // FIXME
+      msgs_back = commandSender_->receiving();
+      std::cout << (cont + 1) * i << " command: " << command << " resp: " << msgs_back << std::endl;
+      if (msgs_back == "ok") {
+        break;
+      }
+    }
+
     cont++;
   } while ((msgs_back.length() == 0) && (cont <= time_limit));
 
