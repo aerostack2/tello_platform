@@ -106,14 +106,16 @@ private:
 public:
   TelloPlatform();
   ~TelloPlatform();
-  void configureSensors();
-  bool ownSendCommand();
-  bool ownSetArmingState(bool state);
-  bool ownSetOffboardControl(bool offboard);
-  bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode& msg);
+  void configureSensors() override;
+  bool ownSendCommand() override;
+  bool ownSetArmingState(bool state) override;
+  bool ownSetOffboardControl(bool offboard) override;
+  bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode& msg) override;
+  void ownKillSwitch() override { tello->sendCommand("emergency", false); };
+  void ownStopPlatform() override { tello->sendCommand("stop", false); };
 
-  bool ownTakeoff();
-  bool ownLand();
+  bool ownTakeoff() override;
+  bool ownLand() override;
 };
 
 #endif  // TELLO_PLATFORM_H

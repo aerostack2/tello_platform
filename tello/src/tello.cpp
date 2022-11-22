@@ -43,7 +43,7 @@ bool Tello::connect() {
   return connected_;
 }
 
-bool Tello::sendCommand(const std::string& command) {
+bool Tello::sendCommand(const std::string& command, bool wait) {
   uint cont             = 0;
   const int time_limit  = 5;
   std::string msgs_back = "";
@@ -51,7 +51,9 @@ bool Tello::sendCommand(const std::string& command) {
   do {
     commandSender_->receiving();
     commandSender_->sending(command);
-
+    if (!wait) {
+      return true;
+    }
     for (auto i = 0; i < 10; i++) {
       std::this_thread::sleep_for(std::chrono::milliseconds(500));  // FIXME
       msgs_back = commandSender_->receiving();
@@ -78,7 +80,7 @@ void Tello::threadStateFnc() {
   while (connected_) {
     resp = getState();
     if (resp) update();
-    sleep(0.2);  // FIXME
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
@@ -101,7 +103,6 @@ void Tello::streamVideo() {
 
 bool Tello::getState() {
   std::string msgs = stateRecv_->receiving();
-
   if (msgs.length() == 0) {
     return false;
   }
@@ -129,6 +130,7 @@ bool Tello::parseState(const std::string& data, std::array<double, 16>& state) {
 }
 
 void Tello::update() {
+  std::lock_guard<std::mutex> lock(state_mutex_);
   orientation_.x = state_[0];
   orientation_.y = state_[1];
   orientation_.z = state_[2];
@@ -215,7 +217,6 @@ bool Tello::speedMotion(double x, double y, double z, double yaw) {
 
   msg = "rc " + std::to_string(int(x)) + " " + std::to_string(int(y)) + " " +
         std::to_string(int(z)) + " " + std::to_string(int(yaw));
-  response = sendCommand(msg);
-
+  response = sendCommand(msg, false);
   return response;
 }

@@ -26,6 +26,7 @@ struct coordinates {
 
 class Tello {
 private:
+  std::mutex state_mutex_;
   std::thread stateThd_;
   std::thread videoThd_;
 
@@ -62,16 +63,37 @@ public:
   bool connect();
 
   bool getState();
-  bool sendCommand(const std::string& command);
+  bool sendCommand(const std::string& command, bool wait = true);
 
   inline bool isConnected() { return connected_; }
-  inline std::array<coordinates, 3> getIMU() { return imu_; }
-  inline coordinates getOrientation() { return orientation_; }
-  inline coordinates getVelocity() { return velocity_; }
-  inline coordinates getAcceleration() { return acceleration_; }
-  inline double getBarometer() { return barometer_; }
-  inline double getHeight() { return height_; }
-  inline double getBattery() { return battery_; }
+  inline std::array<coordinates, 3> getIMU() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return imu_;
+  }
+  inline coordinates getOrientation() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return orientation_;
+  }
+  inline coordinates getVelocity() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return velocity_;
+  }
+  inline coordinates getAcceleration() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return acceleration_;
+  }
+  inline double getBarometer() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return barometer_;
+  }
+  inline double getHeight() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return height_;
+  }
+  inline double getBattery() {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return battery_;
+  }
   inline cv::Mat getFrame() { return frame_; }
 
   void streamVideo();

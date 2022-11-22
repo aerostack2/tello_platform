@@ -87,6 +87,5 @@ std::string SocketUdp::receiving(const int flags) {
 
   msg.append(buffer_.cbegin(), buffer_.cbegin() + n);
   msg = msg.erase(msg.find_last_not_of(" \n\r\t") + 1);
-  // std::cout << msg << std::endl;
   return msg;
 }
