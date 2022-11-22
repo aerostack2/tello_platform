@@ -6,7 +6,7 @@ static std::vector<std::string> split(const std::string& target, char c) {
   std::vector<std::string> result;
 
   while (std::getline(stringstream, temp, c)) {
-    result.push_back(temp);
+    result.emplace_back(temp);
   }
 
   return result;
@@ -43,6 +43,7 @@ bool Tello::connect() {
   return connected_;
 }
 
+// FIXME: change this to return std::string
 bool Tello::sendCommand(const std::string& command, bool wait) {
   uint cont             = 0;
   const int time_limit  = 5;
@@ -75,11 +76,8 @@ bool Tello::sendCommand(const std::string& command, bool wait) {
 }
 
 void Tello::threadStateFnc() {
-  bool resp;
-
   while (connected_) {
-    resp = getState();
-    if (resp) update();
+    if (getState()) update();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
@@ -96,6 +94,7 @@ void Tello::streamVideo() {
       if (!frame.empty()) {
         frame_ = frame;
       }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     capture.release();
   }
@@ -103,7 +102,7 @@ void Tello::streamVideo() {
 
 bool Tello::getState() {
   std::string msgs = stateRecv_->receiving();
-  if (msgs.length() == 0) {
+  if (msgs.empty()) {
     return false;
   }
   return parseState(msgs, state_);
@@ -118,6 +117,7 @@ bool Tello::parseState(const std::string& data, std::array<double, 16>& state) {
     return false;
   }
 
+  // TODO: check if this is the best way to do this
   int i = 0;
   for (auto& value : values) {
     if (value.size()) {

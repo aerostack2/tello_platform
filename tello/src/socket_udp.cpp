@@ -23,8 +23,7 @@ SocketUdp::SocketUdp(const std::string& host, int port, uint bufferSize) {
   serv_addr_.sin_family      = AF_INET;
 
   /* build the sending destination addres */
-  bool setStorage = setDestAddr();
-  if (!setStorage) {
+  if (!setDestAddr()) {
     std::cout << "Unable to setDestAddr" << std::endl;
   }
 }
@@ -35,26 +34,25 @@ SocketUdp::~SocketUdp() {
 }
 
 bool SocketUdp::setDestAddr() {
-  bool success = true;
-  addrinfo* addrInfo{nullptr};
-  addrinfo hints{};
+  addrinfo* addrInfo = nullptr;
+  addrinfo hints;
   hints.ai_family      = AF_INET;
   hints.ai_socktype    = SOCK_DGRAM;
   std::string port_str = std::to_string(port_);
   int ret              = getaddrinfo(host_.c_str(), port_str.c_str(), &hints, &addrInfo);
   if (ret != 0) {
     std::cout << "Error: setting dest_addr sockaddr_storage" << std::endl;
-    success = false;
+    return false;
   }
   memcpy(&dest_addr_, addrInfo->ai_addr, addrInfo->ai_addrlen);
   freeaddrinfo(addrInfo);
-  return success;
+  return true;
 }
 
 bool SocketUdp::bindServer() {
   std::cout << "Server binding to " << host_ << ":" << port_ << std::endl;
-  int n = bind(socket_fd_, reinterpret_cast<sockaddr*>(&serv_addr_), sizeof(serv_addr_));
-  if (n < 0) {
+  int ret = bind(socket_fd_, reinterpret_cast<sockaddr*>(&serv_addr_), sizeof(serv_addr_));
+  if (ret < 0) {
     std::cout << "Unable to bind." << std::endl;
     return false;
   }
@@ -62,7 +60,6 @@ bool SocketUdp::bindServer() {
 }
 
 bool SocketUdp::sending(std::string message) {
-  bool send_ok = true;
   const std::vector<unsigned char> msgs{std::cbegin(message), std::cend(message)};
   const socklen_t dest_addr_len{sizeof(dest_addr_)};
 
@@ -70,9 +67,9 @@ bool SocketUdp::sending(std::string message) {
                  dest_addr_len);
   if (n < 0) {
     std::cout << "sending: It has been impossible to send the message " << message << std::endl;
-    send_ok = false;
+    return false;
   }
-  return send_ok;
+  return true;
 }
 
 std::string SocketUdp::receiving(const int flags) {
