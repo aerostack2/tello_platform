@@ -71,6 +71,7 @@ TelloPlatform::~TelloPlatform() {}
 // *********************************************************
 // ***************** Aerial Platform Methods ***************
 // *********************************************************
+
 void TelloPlatform::configureSensors() {
   imu_sensor_ptr_ = std::make_shared<as2::sensors::Imu>("imu", this);
   battery_ptr_    = std::make_shared<as2::sensors::Battery>("battery", this);
@@ -108,52 +109,49 @@ bool TelloPlatform::ownSendCommand() {
   switch (as2::control_mode::convertToUint8t(this->getControlMode())) {
     case pose_control_mode: {
       RCLCPP_ERROR(this->get_logger(), "Position control not implemented");
-      return false;
+      return false;  // TODO THIS is temporary
       double x_m, y_m, z_m, yaw_rad;
       x_m     = this->command_pose_msg_.pose.position.x;     // m
       y_m     = this->command_pose_msg_.pose.position.y;     // m
       z_m     = this->command_pose_msg_.pose.position.z;     // m
       yaw_rad = this->command_pose_msg_.pose.orientation.z;  // rad
 
-      std::vector<double> new_ref = {x_m, y_m, z_m, yaw_rad};
-      if (reference_point_ != new_ref) {
-        double x   = std::clamp(x_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
-        double y   = std::clamp(y_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
-        double z   = std::clamp(z_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
-        double yaw = normalizeDegrees(yaw_rad * 180 / M_PI);                     // degrees
+      // std::vector<double> new_ref = {x_m, y_m, z_m, yaw_rad}; //FIXME: find a better way to do
+      // this if (reference_point_ != new_ref) {
+      double x   = std::clamp(x_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
+      double y   = std::clamp(y_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
+      double z   = std::clamp(z_m, min_linear_pose_, max_linear_pose_) * 100;  // cm
+      double yaw = normalizeDegrees(yaw_rad * 180 / M_PI);                     // degrees
 
-        bool x_send   = tello->x_motion(x);
-        bool y_send   = tello->y_motion(y);
-        bool z_send   = tello->z_motion(z);
-        bool yaw_send = tello->yaw_twist(yaw);
-
-        if (!x_send) {
-          RCLCPP_ERROR(this->get_logger(), "Sending X position command failed.");
-          return false;
-        } else if (!y_send) {
-          RCLCPP_ERROR(this->get_logger(), "Sending Y position command failed.");
-          return false;
-        } else if (!z_send) {
-          RCLCPP_ERROR(this->get_logger(), "Sending Z position failed.");
-          return false;
-        } else if (!yaw_send) {
-          RCLCPP_ERROR(this->get_logger(), "Sending Yaw orientation failed.");
-          return false;
-        }
-        reference_point_ = new_ref;
+      if (!tello->x_motion(x)) {
+        RCLCPP_ERROR(this->get_logger(), "Sending X position command failed.");
+        return false;
       }
-      return true;
-    }
+      if (!tello->y_motion(y)) {
+        RCLCPP_ERROR(this->get_logger(), "Sending Y position command failed.");
+        return false;
+      }
+      if (!tello->z_motion(z)) {
+        RCLCPP_ERROR(this->get_logger(), "Sending Z position failed.");
+        return false;
+      }
+      if (!tello->yaw_twist(yaw)) {
+        RCLCPP_ERROR(this->get_logger(), "Sending Yaw orientation failed.");
+        return false;
+        // }
+        // reference_point_ = new_ref;
+      }
+    } break;
     case speed_control_mode: {
-      double vx_   = this->command_twist_msg_.twist.linear.x * 100.0;          // cm/s
-      double vy_   = this->command_twist_msg_.twist.linear.y * 100.0;          // cm/s
-      double vz_   = this->command_twist_msg_.twist.linear.z * 100.0;          // cm/s
-      double vyaw_ = this->command_twist_msg_.twist.angular.z * 180.0 / M_PI;  // degrees/s
+      double vx   = this->command_twist_msg_.twist.linear.x * 100.0;          // cm/s
+      double vy   = this->command_twist_msg_.twist.linear.y * 100.0;          // cm/s
+      double vz   = this->command_twist_msg_.twist.linear.z * 100.0;          // cm/s
+      double vyaw = this->command_twist_msg_.twist.angular.z * 180.0 / M_PI;  // degrees/s
 
-      double vx   = std::clamp(vx_, -100.0, 100.0);    // cm/s
-      double vy   = std::clamp(vy_, -100.0, 100.0);    // cm/s
-      double vz   = std::clamp(vz_, -100.0, 100.0);    // cm/s
-      double vyaw = std::clamp(vyaw_, -100.0, 100.0);  // degrees/s
+      vx   = std::clamp(vx, -100.0, 100.0);    // cm/s
+      vy   = std::clamp(vy, -100.0, 100.0);    // cm/s
+      vz   = std::clamp(vz, -100.0, 100.0);    // cm/s
+      vyaw = std::clamp(vyaw, -100.0, 100.0);  // degrees/s
 
       bool speed_send = tello->speedMotion(vx, vy, vz, vyaw);
 
@@ -161,46 +159,34 @@ bool TelloPlatform::ownSendCommand() {
         RCLCPP_ERROR(this->get_logger(), "Tello Platform: Error sending control speed command");
         return false;
       }
-
-      return true;
-    }
+    } break;
     case speed_plane_control_mode: {
       double z_m = this->command_pose_msg_.pose.position.z;  // m
-      double z_  = z_m - tello->getHeight() / 100;           // m
+      double z   = z_m - tello->getHeight() / 100;           // m
 
-      double vx_   = this->command_twist_msg_.twist.linear.x;   // m/s
-      double vy_   = this->command_twist_msg_.twist.linear.y;   // m/s
-      double vyaw_ = this->command_twist_msg_.twist.angular.z;  // rad/s
+      double vx   = this->command_twist_msg_.twist.linear.x * 100;            // m/s
+      double vy   = this->command_twist_msg_.twist.linear.y * 100;            // m/s
+      double vyaw = this->command_twist_msg_.twist.angular.z * 180.0 / M_PI;  // degrees/s
 
-      std::vector<double> new_ref = {vx_, vy_, z_, vyaw_};
-      if (reference_speed_ != new_ref) {
-        double z    = std::clamp(z_, min_linear_pose_, max_linear_pose_) * 100;  // cm
-        bool z_send = tello->z_motion(z);
-        if (!z_send) {
-          RCLCPP_ERROR(this->get_logger(), "Sending Z position failed.");
-          // return false;
-        }
+      // std::array<double, 4> new_ref = {vx, vy, z, vyaw};
+      // if (reference_speed_ != new_ref) { // FIXME this cannot be compared in this way
 
-        double vx   = std::clamp(vx_, min_speed_, max_speed_);
-        vx          = normalize(vx, min_speed_, max_speed_);  // %
-        double vy   = std::clamp(vy_, min_speed_, max_speed_);
-        vy          = normalize(vy, min_speed_, max_speed_);  // %
-        double vyaw = std::clamp(vyaw_, min_speed_, max_speed_);
-        vyaw        = normalize(vyaw, min_speed_, max_speed_);  // %
+      z    = std::clamp(z, min_linear_pose_, max_linear_pose_) * 100;  // cm
+      vx   = std::clamp(vx, -100.0, 100.0);                            // cm/s
+      vy   = std::clamp(vy, -100.0, 100.0);                            // cm/s
+      vyaw = std::clamp(vyaw, -100.0, 100.0);                          // degrees/s
 
-        bool speed_send = tello->speedMotion(vx, vy, 0, vyaw);
-
-        if (!speed_send) {
-          RCLCPP_ERROR(this->get_logger(), "Tello Platform: Error sending control speed command");
-          return false;
-        }
-
-        reference_speed_ = new_ref;
+      if (!tello->z_motion(z)) {
+        RCLCPP_ERROR(this->get_logger(), "Sending Z position failed.");
       }
-      return true;
+      if (!tello->speedMotion(vx, vy, 0, vyaw)) {
+        RCLCPP_ERROR(this->get_logger(), "Tello Platform: Error sending control speed command");
+        return false;
+      }
+      break;
     };
   }
-  return false;
+  return true;
 }
 
 bool TelloPlatform::ownSetArmingState(bool state) {
