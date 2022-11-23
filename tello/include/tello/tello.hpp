@@ -21,7 +21,9 @@ const char* const IP_command{"192.168.10.1"};
 const char* const URL_stream{"udp://0.0.0.0:11111"};
 
 struct coordinates {
-  double x, y, z;
+  double x = 0;
+  double y = 0;
+  double z = 0;
 };
 
 class Tello {
@@ -36,7 +38,7 @@ private:
   // State information.
   bool connected_;
 
-  std::array<double, 16> state_;
+  std::array<double, 16> state_ = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   coordinates orientation_;
   coordinates velocity_;
   coordinates acceleration_;
@@ -63,7 +65,8 @@ public:
   bool connect();
 
   bool getState();
-  bool sendCommand(const std::string& command, bool wait = true);
+  // bool sendCommand(const std::string& command, bool wait = true);
+  bool sendCommand(const std::string& command, bool wait = true, std::string* response = nullptr);
 
   inline bool isConnected() { return connected_; }
   inline std::array<coordinates, 3> getIMU() {

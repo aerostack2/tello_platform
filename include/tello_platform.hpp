@@ -112,7 +112,10 @@ public:
   bool ownSetOffboardControl(bool offboard) override;
   bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode& msg) override;
   void ownKillSwitch() override { tello->sendCommand("emergency", false); };
-  void ownStopPlatform() override { tello->sendCommand("stop", false); };
+  void ownStopPlatform() override {
+    RCLCPP_INFO(this->get_logger(), "Stopping platform");
+    tello->sendCommand("rc 0 0 0 0", false);
+  };
 
   bool ownTakeoff() override;
   bool ownLand() override;

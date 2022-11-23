@@ -34,8 +34,8 @@ SocketUdp::~SocketUdp() {
 }
 
 bool SocketUdp::setDestAddr() {
-  addrinfo* addrInfo = nullptr;
-  addrinfo hints;
+  addrinfo* addrInfo{nullptr};
+  addrinfo hints{};
   hints.ai_family      = AF_INET;
   hints.ai_socktype    = SOCK_DGRAM;
   std::string port_str = std::to_string(port_);
